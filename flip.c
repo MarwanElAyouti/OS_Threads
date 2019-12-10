@@ -22,6 +22,10 @@
 #include "uint128.h"
 #include "flip.h"
 
+
+//Mutex declaration and initialization.
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 int main (void)
 {
     // TODO: start threads to flip the pieces and output the results

@@ -32,8 +32,10 @@ int main (void)
     // (see thread_test() and thread_mutex_test() how to use threads and mutexes,
     //  see bit_test() how to manipulate bits in a large integer)
 
-	for (int i = 0; i <= buffer.size(); i++) {
-		buffer[i] = ~0;
+	uint128_t v;
+	v = ~0;	
+	for (int i = 0; i <= sizeof(buffer); i++) {
+		buffer[i] = v;
 	}
 	printf ("buffer[0] (all 1's) : %lx%016lx\n", HI(buffer[0]), LO(buffer[0])); 
     return (0);

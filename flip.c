@@ -3,7 +3,7 @@
  * Threaded Application
  *
  * Marwan ElAyouti (1282565)
- * Stefan Cracea ()
+ * Stefan Cracea (1231501)
  *
  * 
  * Grading:
@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <errno.h>          // for perror()
 #include <pthread.h>
-
+#include <math.h>
 #include "uint128.h"
 #include "flip.h"
 
@@ -32,35 +32,40 @@ typedef struct
     pthread_t id;
     int index;   
     int multiple_attr;
-    bool active; 
-    bool done;
+    int state_thread; //1 = "active", 2 = "waiting", 3 = "done"
 } thread;
 
 static thread threads[NROF_THREADS]; 
-
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void intializeBuffer() {
 
-	for (int i = 0; i < (NROF_PIECES/128) + 1; ++i)
-	{
+	int i = 0;
+
+	do {
 		buffer[i] = UINT128(0,0);
-	}
+		i ++;
+	} while (i != ceil(NROF_PIECES/128));
 
 }
+
 void printResult() 
-{
-
-	for (int i = 0; i < NROF_PIECES; ++i)
-	{
-		if(BIT_IS_SET(buffer[i / 128], i % 128))
+{	
+	int j = 1;
+	do {
+		
+		if(BIT_IS_SET(buffer[j / 128], j % 128))
 		{
-			printf("%d\n", i);
+			printf("%d\n", j);
 		}
-	}
+
+		j ++;
+	} while (j != NROF_PIECES);	
 
 }
 
-static void * flipPieces(void * arg)
+// The actions a thread does when is available
+void * threadTask(void * arg) 
 {
 	int32_t multiple = * (int *) arg;
 	free(arg);
@@ -72,25 +77,34 @@ static void * flipPieces(void * arg)
 	}
 
 }
+
+void newThreads(int & mult) 
+{	// create new threads
+
+}
 int main (void)
 {
-
+	pthread_
     intializeBuffer();
-   	
 
-    int multiple = 1;
-    
-    intializeBuffer();
-   	
-   	while(multiple <= NROF_PIECES)
-   		{
-   			int * multiple_arg = malloc(sizeof (int));
-   			*multiple_arg = multiple;
+   	//Create the first NROF_THREADS threads
 
-   			flipPieces(multiple_arg);
+   	for (int k = 0; k < NROF_THREADS; k ++) {
+   			threads[k].multiple_attr = mult;
+   			threads[k].state_thread = 1;
+   			pthread_create(&threads[k].id, NULL, threadTask, &k); 
+   			pthread_mutex_lock(&condVarMutex);
+   			pthread_mutex_unlock(&condVarMutex);
+   	}
 
-   			multiple++;
-   		}
+   	for (int mult = 2; mult<= NROF_PIECES; mult ++) {
+
+   		newThreads(*mult)
+   		int * multiple_arg = malloc(sizeof (int));
+   		*multiple_arg = multiple;
+
+   		flipPieces(multiple_arg);
+   	}
 
    	printResult();
 

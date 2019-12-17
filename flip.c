@@ -40,7 +40,7 @@ static thread threads[NROF_THREADS];
 
 
 void intializeBuffer() {
-	for (int i = 0; i < sizeof(buffer); ++i)
+	for (int i = 0; i < (NROF_PIECES/128) + 1; ++i)
 	{
 		buffer[i] = UINT128(0,0);
 	}
@@ -58,10 +58,10 @@ void printResult()
 
 static void * flipPieces(void * arg)
 {
-	int32_t multiple = * (int *) arg;
+	int32_t spacing = * (int *) arg;
 	free(arg);
 
-	for (int i = multiple; i <= NROF_PIECES; i += multiple)
+	for (int i = spacing; i <= NROF_PIECES; i += spacing)
 	{
 		BIT_TOGGLE(buffer[i / 128], i % 128);
 	}
@@ -69,18 +69,19 @@ static void * flipPieces(void * arg)
 }
 int main (void)
 {
-    int multiple = 2;
+    
+    int spacing = 1;
     
     intializeBuffer();
    	
-   	while(multiple <= NROF_PIECES)
+   	while(spacing <= NROF_PIECES)
    		{
    			int * multiple_arg = malloc(sizeof (int));
-   			*multiple_arg = multiple;
+   			*multiple_arg = spacing;
 
-   			flipPieces(&multiple_arg);
+   			flipPieces(multiple_arg);
 
-   			multiple++;
+   			spacing++;
    		}
 
    	printResult();

@@ -85,11 +85,11 @@ int main (void)
    	while(multiple <= NROF_PIECES)
    		{
    			int * multiple_arg = malloc(sizeof (int));
-   			*multiple_arg = spacing;
+   			*multiple_arg = multiple;
 
    			flipPieces(multiple_arg);
 
-   			spacing++;
+   			multiple++;
    		}
 
    	printResult();

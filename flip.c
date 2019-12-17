@@ -23,8 +23,6 @@
 #include "flip.h"
 
 
-// Toggle bit n in v (by Robert Paauw)
-#define BIT_TOGGLE(v,n)      ((v) =  (v) ^ BITMASK(n))
 
 //Mutex declaration and initialization.
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -65,9 +63,9 @@ static void * flipPieces(void * arg)
 
 	for (int i = multiple; i <= NROF_PIECES; i += multiple)
 	{
-		BIT_TOGGLE(buffer[i / 128], i % 128)
+		BIT_TOGGLE(buffer[i / 128], i % 128);
 	}
-	
+
 }
 int main (void)
 {
@@ -86,7 +84,6 @@ int main (void)
    		}
 
    	printResult();
-
 
     return (0);
 }

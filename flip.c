@@ -30,19 +30,21 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 typedef struct 
 {
     pthread_t id;
-    int index;   
-    int multiple_attr;
-    int state_thread; //1 = "active", 2 = "waiting", 3 = "done"
+    int number;   
+    int mult;
+    int state; //1 = "active", 2 = "waiting", 3 = "done"
 } thread;
 
+
 static thread threads[NROF_THREADS]; 
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void intializeBuffer() {
 
+void intializeBuffer() 
+{
 	int i = 0;
 
-	do {
+	do 
+	{
 		buffer[i] = UINT128(0,0);
 		i ++;
 	} while (i != ceil(NROF_PIECES/128));
@@ -52,14 +54,15 @@ void intializeBuffer() {
 void printResult() 
 {	
 	int j = 1;
-	do {
-		
+	do 
+	{	
 		if(BIT_IS_SET(buffer[j / 128], j % 128))
 		{
 			printf("%d\n", j);
 		}
 
 		j ++;
+
 	} while (j != NROF_PIECES);	
 
 }
@@ -78,32 +81,28 @@ void * threadTask(void * arg)
 
 }
 
-void newThreads(int & mult) 
-{	// create new threads
 
-}
 int main (void)
 {
-	pthread_
+
     intializeBuffer();
 
    	//Create the first NROF_THREADS threads
 
-   	for (int k = 0; k < NROF_THREADS; k ++) {
-   			threads[k].multiple_attr = mult;
-   			threads[k].state_thread = 1;
-   			pthread_create(&threads[k].id, NULL, threadTask, &k); 
-   			pthread_mutex_lock(&condVarMutex);
-   			pthread_mutex_unlock(&condVarMutex);
-   	}
+   	// for (int k = 0; k < NROF_THREADS; k ++) {
+   	// 		threads[k].multiple_attr = mult;
+   	// 		threads[k].state_thread = 1;
+   	// 		pthread_create(&threads[k].id, NULL, threadTask, &k); 
+   	// 		pthread_mutex_lock(&mutex);
+   	// 		pthread_mutex_unlock(&mutex);
+   	// }
 
-   	for (int mult = 2; mult<= NROF_PIECES; mult ++) {
+   	for (int mult = 1; mult<= NROF_PIECES; mult ++) {
 
-   		newThreads(*mult)
    		int * multiple_arg = malloc(sizeof (int));
-   		*multiple_arg = multiple;
+   		*multiple_arg = mult;
 
-   		flipPieces(multiple_arg);
+   		threadTask(multiple_arg);
    	}
 
    	printResult();

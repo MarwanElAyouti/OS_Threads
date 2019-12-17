@@ -40,7 +40,7 @@ static thread threads[NROF_THREADS];
 
 
 void intializeBuffer() {
-	for (int i = 0; i < sizeof(buffer); ++i)
+	for (int i = 0; i < (NROF_PIECES / 128) + 1; ++i)
 	{
 		buffer[i] = UINT128(0,0);
 	}

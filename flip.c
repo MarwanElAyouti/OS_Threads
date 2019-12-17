@@ -62,7 +62,7 @@ void printResult()
 
 static void * flipPieces(void * arg)
 {
-	int32_t spacing = * (int *) arg;
+	int32_t multiple = * (int *) arg;
 	free(arg);
 
 	for (int i = multiple; i <= NROF_PIECES; i += multiple)

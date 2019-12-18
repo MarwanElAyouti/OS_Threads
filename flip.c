@@ -163,15 +163,15 @@ int main (void)
 	//Initialize the mutex
 	pthread_mutex_init(&mutex,NULL);
 	
-	//Prepare the threads to be createds
+	//Prepare the threads to be created
 	prepareThreads(NROF_THREADS);	
 
 
 
-    int threadCounter = 0;
+    int threadCounter = 0; //Counter variable used to create threads.
 	int multiple = 2; //Multiple variable that we will flip our bits with that will be passed to a thread.
 	
-	//Create NROF_THREADS
+	/*Create max number of threads allowed and assign them to a multiple.*/
 	while(threadCounter < NROF_THREADS && multiple <= NROF_PIECES )
 	{ 
 		createThread(threadCounter, multiple);
@@ -183,21 +183,25 @@ int main (void)
 		}
 	}
 
-	//add new threads to handle the tasks as the old threads finish theirs
+	/*When there are still multiples to be assigned*/ 
   	while(multiple <= NROF_PIECES) 
   	{
-  		waitForBroadcast();
+  		/* If all threads are in use wait for our condition to signal that a thread is free
+  		 which is upon recieving a broadcast.*/
+  		waitForBroadcast(); 
+  		
   		
   		
   		for (int j = 0; j < NROF_THREADS; ++j)
   		{
+  			/*Join all threads that are done with their task*/
   			if(threads[j].done) 
   			{
   				joinThreads(j);
   				
   				multiple++;
   				
-  				
+  				/*Create new threads since there are still multiples to be assigned*/
   				if(multiple <= NROF_PIECES) 
   				{
   					createThread(j,multiple);
@@ -207,8 +211,8 @@ int main (void)
   		}
   	}
 
-
-  	/*By now all threads should be done with their task*/
+  	/*By now all threads should be done with their task and
+  	 no more multiples can be assigned since multiple > NROF_PIECES */
 
   	killAllActiveThreads(NROF_THREADS);
 
@@ -216,7 +220,6 @@ int main (void)
   	/*Print the final result*/
   	printResult();
 
-  	//printf(" Total Thread count is %d: ", threadCount);
     
     return (0);
 }
@@ -226,9 +229,9 @@ void updateBuffer(int multiple)
 {
 	for (int i = multiple; i < NROF_PIECES; i += multiple)
 	{
-		pthread_mutex_lock(&mutex);
-		BIT_XOR(buffer[i / 128], i % 128);
-		pthread_mutex_unlock(&mutex);
+		pthread_mutex_lock(&mutex); //Critical Section start
+		BIT_XOR(buffer[i / 128], i % 128); //Update all the buffers
+		pthread_mutex_unlock(&mutex); //Critical Section end
 	}
 }
 
@@ -241,10 +244,11 @@ void * threadTask(void * arg)
 	updateBuffer(multiple);
 	
 
-	threads[number].done = true; //Thread is done with its task
-	pthread_mutex_lock(&mutex);
-	nrThreadsActive --;
-	pthread_cond_broadcast(&condition); 
-	pthread_mutex_unlock(&mutex);
+	threads[number].done = true; //Set Thread state done to true to indicate its done with its task
+	
+	pthread_mutex_lock(&mutex); //Critical Section start
+	nrThreadsActive --; //Decrement thread
+	pthread_cond_broadcast(&condition); //Broadcast signal to condition variable that a thread has been freed.
+	pthread_mutex_unlock(&mutex); //Critical Section end 
 	return (0);
 }

@@ -83,7 +83,9 @@ void printResult()
 {	
 	int j = 1;
 	do 
-	{	
+	{	//print the number j whose representative bit is set to 1 
+		//in the binary representation of the integer on position j/128 in the buffer
+		//as long as j is strictly smaller than NROF_PIECES
 		if(BIT_IS_SET(buffer[j / 128], j % 128))
 		{
 			printf("%d\n", j);
@@ -156,7 +158,7 @@ int main (void)
 {
 	intializeBuffer();
 	
-
+	//initialize the mutex to null
 	pthread_mutex_init(&mutex,NULL);
 	
 	prepareThreads(NROF_THREADS);	
@@ -166,7 +168,8 @@ int main (void)
     int threadCount = 0;
 	int multiple = 2; //we start at 2
 	
-	while(multiple <= NROF_PIECES && threadCount < NROF_THREADS){ //start NROF_TREADS firsts threads
+	//start first NROF_TREADS threads
+	while(multiple <= NROF_PIECES && threadCount < NROF_THREADS){ 
 		createThread(threadCount, multiple);
 		pthread_mutex_lock(&mutex);
 		nrThreadsActive++;
@@ -177,6 +180,7 @@ int main (void)
 		}
 	}
 
+	//add new threads to handle the tasks as the old threads finish theirs
   	while(multiple <= NROF_PIECES) 
   	{
   		waitForBroadcast();
@@ -190,7 +194,7 @@ int main (void)
   				
   				multiple++;
   				
-
+  				
   				if(multiple <= NROF_PIECES) 
   				{
   					threads[j].active = true;
@@ -218,8 +222,9 @@ void flipBuffer(int multiple)
 {
 	for (int i = multiple; i < NROF_PIECES; i += multiple)
 	{
-		
+		pthread_mutex_lock(&mutex);
 		BIT_XOR(buffer[i / 128], i % 128);
+		pthread_mutex_unlock(&mutex);
 		
 	}
 }
@@ -229,9 +234,9 @@ void * threadTask(void * arg)
 	int number = * (int *) arg;
 	int multiple = threads[number].mult;
 	
-	pthread_mutex_lock(&mutex);
+	
 	flipBuffer(multiple);
-	pthread_mutex_unlock(&mutex);
+	
 
 	threads[number].done = true; //Thread is done with its task
 	pthread_mutex_lock(&mutex);

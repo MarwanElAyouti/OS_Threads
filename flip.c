@@ -56,6 +56,7 @@ typedef struct
     /*Thread Multiple to work on*/
     int mult;
 
+
     /*Thread's State*/
 
     bool active; //True if active, False otherwise.
@@ -98,7 +99,7 @@ void printResult()
 }
 
 
-// The actions a thread does when is available
+/*The task a thread does when it is created.*/
 void * threadTask(void * arg);
 
 
@@ -156,26 +157,28 @@ void waitForBroadcast()
 
 int main (void)
 {
+	//Initialize the buffer
 	intializeBuffer();
 	
-	//initialize the mutex to null
+	//Initialize the mutex
 	pthread_mutex_init(&mutex,NULL);
 	
+	//Prepare the threads to be createds
 	prepareThreads(NROF_THREADS);	
 
 
 
-    int threadCount = 0;
-	int multiple = 2; //we start at 2
+    int threadCounter = 0;
+	int multiple = 2; //Multiple variable that we will flip our bits with that will be passed to a thread.
 	
-	//start first NROF_TREADS threads
-	while(multiple <= NROF_PIECES && threadCount < NROF_THREADS){ 
-		createThread(threadCount, multiple);
-		pthread_mutex_lock(&mutex);
+	//Create NROF_THREADS
+	while(threadCounter < NROF_THREADS && multiple <= NROF_PIECES )
+	{ 
+		createThread(threadCounter, multiple);
 		nrThreadsActive++;
-		pthread_mutex_unlock(&mutex);
 		threadCount++;
-		if (threadCount < NROF_THREADS){
+		if (threadCount < NROF_THREADS)
+		{
 			multiple++;
 		}
 	}
@@ -197,35 +200,35 @@ int main (void)
   				
   				if(multiple <= NROF_PIECES) 
   				{
-  					threads[j].active = true;
-  					threads[j].mult = multiple;
-  					pthread_mutex_lock(&mutex);
+  					createThread(j,multiple);
   					nrThreadsActive++;
-  					pthread_mutex_unlock(&mutex);
-  					pthread_create(&threads[j].id, NULL, threadTask, &threads[j].number);
   				}
   			}
   		}
   	}
 
+
+  	/*By now all threads should be done with their task*/
+
   	killAllActiveThreads(NROF_THREADS);
 
   		   	
-
+  	/*Print the final result*/
   	printResult();
 
+  	//printf(" Total Thread count is %d: ", threadCount);
+    
     return (0);
 }
 
 /*Flips every multiple of a buffer*/
-void flipBuffer(int multiple) 
+void updateBuffer(int multiple) 
 {
 	for (int i = multiple; i < NROF_PIECES; i += multiple)
 	{
 		pthread_mutex_lock(&mutex);
 		BIT_XOR(buffer[i / 128], i % 128);
 		pthread_mutex_unlock(&mutex);
-		
 	}
 }
 
@@ -235,7 +238,7 @@ void * threadTask(void * arg)
 	int multiple = threads[number].mult;
 	
 	
-	flipBuffer(multiple);
+	updateBuffer(multiple);
 	
 
 	threads[number].done = true; //Thread is done with its task

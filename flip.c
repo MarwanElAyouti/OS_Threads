@@ -176,8 +176,8 @@ int main (void)
 	{ 
 		createThread(threadCounter, multiple);
 		nrThreadsActive++;
-		threadCount++;
-		if (threadCount < NROF_THREADS)
+		threadCounter++;
+		if (threadCounter < NROF_THREADS)
 		{
 			multiple++;
 		}

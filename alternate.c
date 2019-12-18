@@ -1,3 +1,11 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <errno.h>          // for perror()
+#include <pthread.h>
+#include <math.h>
+#include "uint128.h"
+#include "flip.h"
 
 typedef struct {
     pthread_t thread_id;  

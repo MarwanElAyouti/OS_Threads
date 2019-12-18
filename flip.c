@@ -31,11 +31,11 @@
 // set bit n in v
 #define BIT_SET(v,n)        ((v) =  (v) |  BITMASK(n))
 
-// clear bit n in 
+// clear bit n in V
 #define BIT_CLEAR(v,n)      ((v) =  (v) & ~BITMASK(n))
 
-//
-#define BIT_TOGGLE(v,n)      ((v) =  (v) ^ BITMASK(n))
+//Flips a bit n in V
+#define BIT_XOR(v,n)      ((v) =  (v) ^ BITMASK(n))
 
 
 
@@ -71,13 +71,10 @@ thread threads[NROF_THREADS];
 /*Initializes the buffer to all ones meaning that all pieces are black.*/
 void intializeBuffer()
 {
-	int i = 0;
-
-	do 
+	for (int i = 0; i < (NROF_PIECES/128 +1); ++i)
 	{
-		buffer[i] = UINT128(1,1);
-		i ++;
-	} while (i != ceil(NROF_PIECES/128));
+		buffer[i] = ~0;
+	}
 
 }
 
@@ -98,90 +95,99 @@ void printResult()
 
 }
 
+
 // The actions a thread does when is available
-void * threadTask(void * arg) 
+void * threadTask(void * arg);
+
+
+/*Sets all threads to inactive*/
+void prepareThreads(int maxthreads) 
 {
-	int number = * (int *) arg;
-	int multiple = threads[number].mult;
-	
-
-	for (int i = multiple; i <= NROF_PIECES; i += multiple)
+	for (int i = 0; i < maxthreads ; i++) 
 	{
-
-		BIT_TOGGLE(buffer[i / 128], i % 128);
+		threads[i].active = false;
 	}
+}
 
-	threads[number].done = true; //Thread is done with its task
+/*Creates a thread assigns a multiple  and updates the flags that it is active and not done*/
+void createThread(int i, int multiple) 
+{
+	threads[i].mult = multiple;
+	threads[i].number = i;
+	threads[i].done = false;
+	threads[i].active = true;	
+	pthread_create(&threads[i].id,NULL,threadTask,&threads[i].number); //create thread
+}
+
+/*Joins threads and sets them as inactive*/
+void joinThreads(int j) 
+{
+ 	pthread_join(threads[j].id, NULL);
+ 	threads[j].done = false;
+ 	threads[j].active = false;	
+}
+
+/*Joins all remaining active threads when our task is complete.*/
+void killAllActiveThreads(int maxthreads)
+{
+	for (int i = 0; i < maxthreads; i++)
+  	{
+  		if (threads[i].active) {
+  			pthread_join(threads[i].id,NULL);
+  		}
+  	}
+}
+
+/*If all threads are in use a lock is put and only release when a broadcast signal is recieved.*/
+void waitForBroadcast()
+{
 	pthread_mutex_lock(&mutex);
-	nrThreadsActive --;
-	pthread_cond_signal(&condition); 
-	pthread_mutex_unlock(&mutex);
-	return 0;
+
+  	while(nrThreadsActive + 1 > NROF_THREADS) 
+  	{
+  		pthread_cond_wait(&condition, &mutex);
+  	}
+
+  	pthread_mutex_unlock(&mutex);
 }
 
 
 int main (void)
 {
+	intializeBuffer();
 	
 
 	pthread_mutex_init(&mutex,NULL);
-	for (int i = 0; i < NROF_THREADS ; i++) 
-	{
-		threads[i].active = false;
+	
+	prepareThreads(NROF_THREADS);	
+
+
+
+    int threadCount = 0;
+	int multiple = 2; //we start at 2
+	
+	while(multiple <= NROF_PIECES && threadCount < NROF_THREADS){ //start NROF_TREADS firsts threads
+		createThread(threadCount, multiple);
+		pthread_mutex_lock(&mutex);
+		nrThreadsActive++;
+		pthread_mutex_unlock(&mutex);
+		threadCount++;
+		if (threadCount < NROF_THREADS){
+			multiple++;
+		}
 	}
 
-	int multiple = 1;
-
-
-    intializeBuffer();
-
-    
-   	//Create the first NROF_THREADS threads
-
-   	// for (int k = 0; k < NROF_THREADS; k ++) {
-   	// 		threads[k].multiple_attr = mult;
-   	// 		threads[k].state_thread = 1;
-   	// 		pthread_create(&threads[k].id, NULL, threadTask, &k); 
-   	// 		pthread_mutex_lock(&mutex);
-   	// 		pthread_mutex_unlock(&mutex);
-   	// }
-
-    int index = 0;
   	while(multiple <= NROF_PIECES) 
   	{
+  		waitForBroadcast();
   		
-  		if(index < NROF_THREADS)
-  		{
-  			threads[index].number = index;
-  			threads[index].active = true;
-  			threads[index].done = false;
-  			threads[index].mult = multiple;
-  			pthread_create(&threads[index].id,NULL,threadTask,&threads[index].number);
-  			printf("Thread created\n");
-  			pthread_mutex_lock(&mutex);
-			nrThreadsActive++;
-			pthread_mutex_unlock(&mutex);
-			multiple++;
-			index++;
-
-  		}
-
-  		pthread_mutex_lock(&mutex);
-
-  		while(nrThreadsActive + 1 > NROF_THREADS) 
-  		{
-  			pthread_cond_wait(&condition, &mutex);
-  		}
-
-  		pthread_mutex_unlock(&mutex);
   		
   		for (int j = 0; j < NROF_THREADS; ++j)
   		{
-  			if(threads[j].done == true) 
+  			if(threads[j].done) 
   			{
-  				threads[j].done = false;
-  				threads[j].active = false;
-  				pthread_join(threads[j].id, NULL);
+  				joinThreads(j);
+  				
   				multiple++;
   				
 
@@ -196,17 +202,41 @@ int main (void)
   				}
   			}
   		}
+  	}
 
-   		for (int i = 0; i < NROF_THREADS; ++i)
-   		{
-   			if(threads[i].active == true) {
-   				pthread_join(threads[i].id, NULL);
-   			}
-   		}
+  	killAllActiveThreads(NROF_THREADS);
 
-   	}
+  		   	
 
-   	printResult();
+  	printResult();
 
     return (0);
+}
+
+/*Flips every multiple of a buffer*/
+void flipBuffer(int multiple) 
+{
+	for (int i = multiple; i < NROF_PIECES; i += multiple)
+	{
+		
+		BIT_XOR(buffer[i / 128], i % 128);
+		
+	}
+}
+
+void * threadTask(void * arg) 
+{
+	int number = * (int *) arg;
+	int multiple = threads[number].mult;
+	
+	pthread_mutex_lock(&mutex);
+	flipBuffer(multiple);
+	pthread_mutex_unlock(&mutex);
+
+	threads[number].done = true; //Thread is done with its task
+	pthread_mutex_lock(&mutex);
+	nrThreadsActive --;
+	pthread_cond_broadcast(&condition); 
+	pthread_mutex_unlock(&mutex);
+	return (0);
 }
